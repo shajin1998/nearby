@@ -3,6 +3,8 @@ from .views import CategoryAPIView
 from .views import UserProfileAPIView
 from .views import OfferAPIView
 from .views import DailyEarningAPIView
+from .views import GenerateOTPAPIView, VerifyOTPAPIView
+from .views import SaveDailyEarningAPIView,GetDailyEarningsAPIView
 
 urlpatterns = [
     path('categories/', CategoryAPIView.as_view(), name='category-list-create'),
@@ -13,4 +15,9 @@ urlpatterns = [
     path('offers/<int:pk>/', OfferAPIView.as_view()), 
     path('daily-earning/', DailyEarningAPIView.as_view()),            
     path('daily-earning/<int:pk>/', DailyEarningAPIView.as_view()),
+    path('delivery-partner/generate-otp/', GenerateOTPAPIView.as_view(), name='generate-otp'),
+    path('delivery-partner/verify-otp/', VerifyOTPAPIView.as_view(), name='verify-otp'),
+    path('save-daily-earning/', SaveDailyEarningAPIView.as_view(), name='save-daily-earning'),
+    path('earnings/',GetDailyEarningsAPIView.as_view(), name='get-daily-earnings'),
+    
 ]

@@ -8,4 +8,6 @@ admin.site.register(Product)
 admin.site.register(Offer)
 admin.site.register(DailyEarning)
 admin.site.register(PaymentMode)
+admin.site.register(DeliveryOTP)
+admin.site.register(HoursPay)
 

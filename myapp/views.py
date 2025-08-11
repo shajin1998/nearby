@@ -8,6 +8,12 @@ from .serializers import OfferSerializer
 from django.db import IntegrityError
 from .models import DailyEarning
 from .serializers import DailyEarningSerializer
+from django.core.mail import send_mail
+from .models import DeliveryOTP, UserProfile
+from .serializers import DeliveryOTPSerializer
+import random
+from .models import DeliveryOTP, UserProfile
+from decimal import Decimal
 
 class CategoryAPIView(APIView):
     def get(self, request, pk=None):
@@ -212,3 +218,192 @@ class DailyEarningAPIView(APIView):
 
         earning.delete()
         return Response({"message": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    
+
+class GenerateOTPAPIView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        role = request.data.get('role')
+
+        if not email or not role:
+            return Response({'error': 'Email and role are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = UserProfile.objects.get(email=email, role=role)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        
+        DeliveryOTP.objects.filter(user=user, is_verified=False).delete()
+
+        
+        otp_value = random.randint(100000, 999999)
+        otp = DeliveryOTP.objects.create(user=user, otp=otp_value)
+
+        serializer = DeliveryOTPSerializer(otp)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class VerifyOTPAPIView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        role = request.data.get('role')
+        otp_value = request.data.get('otp')
+
+        if not email or not role or not otp_value:
+            return Response({'error': 'Email, role, and OTP are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            otp_value = int(otp_value)
+        except ValueError:
+            return Response({'error': 'OTP must be a number.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = UserProfile.objects.get(email=email, role=role)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        qs = UserProfile.objects.filter(email=email, otp=otp_value, is_verified=False)
+        if not qs.exists():
+            return Response({'error': 'OTP verified successfully.'}, status=status.HTTP_200_OK)
+        
+
+class SaveDailyEarningAPIView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        role = request.data.get('role')
+        date = request.data.get('date')
+        hours_worked = request.data.get('hours_worked')
+
+        
+        if not all([email, role, date, hours_worked]):
+            return Response({'error': 'Missing fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        try:
+            user = UserProfile.objects.get(email=email, role=role)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+       
+        if not user.hours_pay or not user.hours_pay.amount:
+            return Response({'error': 'Hourly pay not found for user'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            hourly_amount = Decimal(user.hours_pay.amount)
+            hours = Decimal(hours_worked)
+        except:
+            return Response({'error': 'Invalid amount or hours'}, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        total_earning = hourly_amount * hours
+
+       
+        daily_earning = DailyEarning.objects.create(
+            user=user,
+            date_of_earning=date,
+            earning=total_earning
+        )
+
+        return Response({
+            'message': 'Daily earning saved',
+            'user': user.name,
+            'date': date,
+            'hours_worked': float(hours),
+            'hourly_rate': float(hourly_amount),
+            'total_earning': float(total_earning)
+        }, status=status.HTTP_201_CREATED)       
+
+
+from decimal import Decimal
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Sum
+from .models import UserProfile, DailyEarning
+
+
+class SaveDailyEarningAPIView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        role = request.data.get('role')
+        date = request.data.get('date')
+        hours_worked = request.data.get('hours_worked')
+
+        if not all([email, role, date, hours_worked]):
+            return Response({'error': 'Missing fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = UserProfile.objects.get(email=email, role=role)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not user.hours_pay or not user.hours_pay.amount:
+            return Response({'error': 'Hourly pay not found for user'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            hourly_amount = Decimal(user.hours_pay.amount)
+            hours = Decimal(hours_worked)
+        except:
+            return Response({'error': 'Invalid amount or hours'}, status=status.HTTP_400_BAD_REQUEST)
+
+        total_earning = hourly_amount * hours
+
+        DailyEarning.objects.create(
+            user=user,
+            date_of_earning=date,
+            earning=total_earning
+        )
+
+        return Response({
+            'message': 'Daily earning saved',
+            'user': user.name,
+            'date': date,
+            'hours_worked': float(hours),
+            'hourly_rate': float(hourly_amount),
+            'total_earning': float(total_earning)
+        }, status=status.HTTP_201_CREATED)
+
+
+class GetDailyEarningsAPIView(APIView):
+    def get(self, request):
+        name = request.GET.get('name')
+        email = request.GET.get('email')
+        role = request.GET.get('role')
+        hourly_pay = request.GET.get('hourly_pay')
+        date = request.GET.get('date')
+
+        filters = {}
+
+        if name:
+            filters['user__name__icontains'] = name.strip()
+        if email:
+            filters['user__email__iexact'] = email.strip()
+        if role:
+            filters['user__role__iexact'] = role.strip()
+        if hourly_pay:
+            filters['user__hours_pay__amount'] = hourly_pay.strip()
+        if date:
+            filters['date_of_earning'] = date.strip()
+
+        earnings_qs = DailyEarning.objects.filter(**filters).select_related('user', 'user__hours_pay')
+
+        if not earnings_qs.exists():
+            return Response({"error": "No matching users found."}, status=status.HTTP_404_NOT_FOUND)
+
+        total_earning_sum = earnings_qs.aggregate(total=Sum('earning'))['total'] or 0
+
+        records = []
+        for earning in earnings_qs:
+            records.append({
+                "name": earning.user.name,
+                "email": earning.user.email,
+                "hourly_pay": float(earning.user.hours_pay.amount) if earning.user.hours_pay else None,
+                "daily_earning": float(earning.earning),
+                "date_of_earning": str(earning.date_of_earning),
+                "role": earning.user.role
+            })
+
+        return Response({
+            "total_earning": float(total_earning_sum),
+            "records": records
+        }, status=status.HTTP_200_OK)
