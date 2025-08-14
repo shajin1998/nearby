@@ -55,6 +55,8 @@ class UserProfile(models.Model):
 class DailyEarning(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+
+    
     date_of_earning = models.DateField()
     earning = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  
 

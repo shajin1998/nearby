@@ -14,6 +14,7 @@ from .serializers import DeliveryOTPSerializer
 import random
 from .models import DeliveryOTP, UserProfile
 from decimal import Decimal
+from datetime import datetime
 
 class CategoryAPIView(APIView):
     def get(self, request, pk=None):
@@ -375,33 +376,39 @@ class GetDailyEarningsAPIView(APIView):
         filters = {}
 
         if name:
-            filters['user__name__icontains'] = name.strip()
+            filters['user__name'] = name
         if email:
-            filters['user__email__iexact'] = email.strip()
+            filters['user__email__icontains'] = email.strip()
         if role:
             filters['user__role__iexact'] = role.strip()
         if hourly_pay:
-            filters['user__hours_pay__amount'] = hourly_pay.strip()
+            try:
+                hourly_pay_value = float(hourly_pay)
+                filters['user__hours_pay__amount'] = hourly_pay_value
+            except ValueError:
+                return Response({"error": "Invalid hourly_pay value."}, status=status.HTTP_400_BAD_REQUEST)
         if date:
-            filters['date_of_earning'] = date.strip()
-
+            try:
+                parsed_date = datetime.strptime(date.strip(), "%Y-%m-%d").date()
+                filters['date_of_earning'] = parsed_date
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        print('filters...',filters)
         earnings_qs = DailyEarning.objects.filter(**filters).select_related('user', 'user__hours_pay')
 
         if not earnings_qs.exists():
-            return Response({"error": "No matching users found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "No matching records found."}, status=status.HTTP_404_NOT_FOUND)
 
         total_earning_sum = earnings_qs.aggregate(total=Sum('earning'))['total'] or 0
 
-        records = []
-        for earning in earnings_qs:
-            records.append({
-                "name": earning.user.name,
-                "email": earning.user.email,
-                "hourly_pay": float(earning.user.hours_pay.amount) if earning.user.hours_pay else None,
-                "daily_earning": float(earning.earning),
-                "date_of_earning": str(earning.date_of_earning),
-                "role": earning.user.role
-            })
+        records = [{
+            "name": e.user.name,
+            "email": e.user.email,
+            "hourly_pay": float(e.user.hours_pay.amount) if e.user.hours_pay else None,
+            "daily_earning": float(e.earning),
+            "date_of_earning": str(e.date_of_earning),
+            "role": e.user.role
+        } for e in earnings_qs]
 
         return Response({
             "total_earning": float(total_earning_sum),
