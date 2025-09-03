@@ -32,31 +32,29 @@ class UserProfile(models.Model):
     ROLE_CHOICES = [
         ('user', 'User'),
         ('delivery_partner', 'Delivery Partner'),
+        ('business', 'Business'),
     ]
 
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     phone = models.CharField(max_length=15)
-    address = models.JSONField(blank=True,null=True)
-    account_details = models.JSONField(blank=True,null=True)
-    email = models.EmailField(unique=True)
-    role = models.CharField(max_length=100,default="")
-    otp = models.IntegerField ()
+    address = models.JSONField(blank=True, null=True)
+    account_details = models.JSONField(blank=True, null=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
+    role = models.CharField(max_length=100, default="")
+    otp = models.IntegerField(blank=True, null=True)  
     is_verified = models.BooleanField(default=False)
-    attendence = models.JSONField(blank=True,null=True)
+    attendence = models.JSONField(blank=True, null=True)
     hours_pay = models.ForeignKey(HoursPay, on_delete=models.SET_NULL, null=True, blank=True)
-    payment_mode = models.ForeignKey(PaymentMode, on_delete=models.SET_NULL, null=True)
+    payment_mode = models.ForeignKey(PaymentMode, on_delete=models.SET_NULL, null=True, blank=True)
 
-
-    def _str_(self):
+    def __str__(self):
         return self.name
-    
+
 
 class DailyEarning(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
-
-    
     date_of_earning = models.DateField()
     earning = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  
 

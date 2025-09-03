@@ -15,6 +15,8 @@ import random
 from .models import DeliveryOTP, UserProfile
 from decimal import Decimal
 from datetime import datetime
+from django.db.models import Sum
+
 
 class CategoryAPIView(APIView):
     def get(self, request, pk=None):
@@ -225,24 +227,50 @@ class GenerateOTPAPIView(APIView):
     def post(self, request):
         email = request.data.get('email')
         role = request.data.get('role')
+        user_id = request.data.get('user_id')
 
+        print(" Incoming:", email, role, user_id, type(email), type(role))
+
+       
         if not email or not role:
             return Response({'error': 'Email and role are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        
+        email = str(email).strip().lower()
+        role = str(role).strip().lower()
+
         try:
-            user = UserProfile.objects.get(email=email, role=role)
+            if user_id:
+                user = UserProfile.objects.get(id=user_id, email=email, role=role)
+            else:
+                user = UserProfile.objects.get(email=email, role=role)
+
         except UserProfile.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        
-        DeliveryOTP.objects.filter(user=user, is_verified=False).delete()
+        except Exception as e:
+            print(" Error in GenerateOTP:", str(e))
+            return Response({'error': str(e)}, status=500)
 
         
         otp_value = random.randint(100000, 999999)
+
+        
+        user.otp = otp_value
+        user.save()
+
+        
         otp = DeliveryOTP.objects.create(user=user, otp=otp_value)
 
         serializer = DeliveryOTPSerializer(otp)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        
+        return Response({
+            "message": "OTP generated successfully ",
+            "otp": otp_value,      
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
 
 class VerifyOTPAPIView(APIView):
     def post(self, request):
@@ -250,120 +278,127 @@ class VerifyOTPAPIView(APIView):
         role = request.data.get('role')
         otp_value = request.data.get('otp')
 
-        if not email or not role or not otp_value:
-            return Response({'error': 'Email, role, and OTP are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        print(" Incoming Verify:", email, role, otp_value)
 
+        # Validation
+        if not email or not role or not otp_value:
+            return Response(
+                {'error': 'Email, role, and OTP are required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # OTP should be int
         try:
             otp_value = int(otp_value)
         except ValueError:
-            return Response({'error': 'OTP must be a number.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'OTP must be a number.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+        # User check
         try:
-            user = UserProfile.objects.get(email=email, role=role)
+            user = UserProfile.objects.get(email=email.strip().lower(), role=role.strip().lower())
         except UserProfile.DoesNotExist:
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        qs = UserProfile.objects.filter(email=email, otp=otp_value, is_verified=False)
-        if not qs.exists():
-            return Response({'error': 'OTP verified successfully.'}, status=status.HTTP_200_OK)
+       
+        try:
+            otp_obj = DeliveryOTP.objects.filter(
+                user=user, otp=otp_value, is_verified=False
+            ).latest('created_at')
+        except DeliveryOTP.DoesNotExist:
+            return Response({'error': 'Invalid or expired OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        otp_obj.is_verified = True
+        otp_obj.save()
+
+        
+        
+        user.is_verified = True
+        user.save()
+
+        serializer = DeliveryOTPSerializer(otp_obj)
+
+        return Response({
+            "message": "OTP verified successfully!",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
         
 
 class SaveDailyEarningAPIView(APIView):
     def post(self, request):
-        email = request.data.get('email')
-        role = request.data.get('role')
-        date = request.data.get('date')
-        hours_worked = request.data.get('hours_worked')
+        email = request.data.get("email")
+        role = request.data.get("role")
+        date = request.data.get("date")
+        hours_worked = request.data.get("hours_worked")
 
-        
-        if not all([email, role, date, hours_worked]):
-            return Response({'error': 'Missing fields'}, status=status.HTTP_400_BAD_REQUEST)
+        print(" Incoming:", email, role, date, hours_worked)
 
-        
+        # 🔹 Validation
+        if not email or not role or not date or not hours_worked:
+            return Response(
+                {"error": "Email, role, date and hours_worked are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 🔹 Normalize
+        email = str(email).strip().lower()
+        role = str(role).strip().lower()
+
+        # 🔹 User lookup
         try:
             user = UserProfile.objects.get(email=email, role=role)
         except UserProfile.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(" Error in SaveDailyEarning:", str(e))
+            return Response({"error": str(e)}, status=500)
 
-       
+        # 🔹 Hourly pay check
         if not user.hours_pay or not user.hours_pay.amount:
-            return Response({'error': 'Hourly pay not found for user'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Hourly pay not found for this user"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
+        # 🔹 Safe conversion
         try:
             hourly_amount = Decimal(user.hours_pay.amount)
             hours = Decimal(hours_worked)
-        except:
-            return Response({'error': 'Invalid amount or hours'}, status=status.HTTP_400_BAD_REQUEST)
+        except (InvalidOperation, TypeError):
+            return Response(
+                {"error": "Invalid hourly rate or hours worked"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        
+        # 🔹 Calculate earning
         total_earning = hourly_amount * hours
 
-       
+        # 🔹 Save record
         daily_earning = DailyEarning.objects.create(
             user=user,
             date_of_earning=date,
-            earning=total_earning
+            earning=total_earning,
         )
 
-        return Response({
-            'message': 'Daily earning saved',
-            'user': user.name,
-            'date': date,
-            'hours_worked': float(hours),
-            'hourly_rate': float(hourly_amount),
-            'total_earning': float(total_earning)
-        }, status=status.HTTP_201_CREATED)       
+        serializer = DailyEarningSerializer(daily_earning)
 
-
-from decimal import Decimal
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.db.models import Sum
-from .models import UserProfile, DailyEarning
-
-
-class SaveDailyEarningAPIView(APIView):
-    def post(self, request):
-        email = request.data.get('email')
-        role = request.data.get('role')
-        date = request.data.get('date')
-        hours_worked = request.data.get('hours_worked')
-
-        if not all([email, role, date, hours_worked]):
-            return Response({'error': 'Missing fields'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = UserProfile.objects.get(email=email, role=role)
-        except UserProfile.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if not user.hours_pay or not user.hours_pay.amount:
-            return Response({'error': 'Hourly pay not found for user'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            hourly_amount = Decimal(user.hours_pay.amount)
-            hours = Decimal(hours_worked)
-        except:
-            return Response({'error': 'Invalid amount or hours'}, status=status.HTTP_400_BAD_REQUEST)
-
-        total_earning = hourly_amount * hours
-
-        DailyEarning.objects.create(
-            user=user,
-            date_of_earning=date,
-            earning=total_earning
+        # 🔹 Response (GenerateOTPAPIView போலவே)
+        return Response(
+            {
+                "message": "Daily earning saved successfully",
+                "data": serializer.data,
+                "calculation": {
+                    "hours_worked": float(hours),
+                    "hourly_rate": float(hourly_amount),
+                    "total_earning": float(total_earning),
+                },
+            },
+            status=status.HTTP_201_CREATED,
         )
-
-        return Response({
-            'message': 'Daily earning saved',
-            'user': user.name,
-            'date': date,
-            'hours_worked': float(hours),
-            'hourly_rate': float(hourly_amount),
-            'total_earning': float(total_earning)
-        }, status=status.HTTP_201_CREATED)
-
 
 class GetDailyEarningsAPIView(APIView):
     def get(self, request):
