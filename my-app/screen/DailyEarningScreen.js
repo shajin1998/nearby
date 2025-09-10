@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Button,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+  View,Text,TextInput,Button,FlatList,StyleSheet,ActivityIndicator,Alert,} 
+  from "react-native";
 import {
   getDailyEarnings,
   createDailyEarning,
@@ -25,8 +18,6 @@ export default function DailyEarningScreen() {
   const [loading, setLoading] = useState(false);
 
   
-  const USER_ID = 3;
-
   const fetchEarnings = async () => {
     setLoading(true);
     const data = await getDailyEarnings();
@@ -58,10 +49,10 @@ export default function DailyEarningScreen() {
     }
 
     const payload = {
-  user: USER_ID,
-  date_of_earning: date,
-  earning: amount.toString(), // number → string
-};
+      user: USER_ID,
+      date_of_earning: date,
+      earning: amount.toString(), 
+    };
 
 
     console.log("🚀 Payload sending:", payload);

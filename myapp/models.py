@@ -28,25 +28,45 @@ class PaymentMode(models.Model):
     def __str__(self):
         return self.mode
 
+from django.db import models
+
 class UserProfile(models.Model):
     ROLE_CHOICES = [
         ('user', 'User'),
         ('delivery_partner', 'Delivery Partner'),
         ('business', 'Business'),
+        ('store_owner', 'Store Owner'),
     ]
 
     id = models.AutoField(primary_key=True)
+    # Profile Info
     name = models.CharField(max_length=100)
-    phone = models.CharField(max_length=15)
-    address = models.JSONField(blank=True, null=True)
-    account_details = models.JSONField(blank=True, null=True)
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default="user")
     email = models.EmailField(unique=True, null=True, blank=True)
-    role = models.CharField(max_length=100, default="")
-    otp = models.IntegerField(blank=True, null=True)  
-    is_verified = models.BooleanField(default=False)
-    attendence = models.JSONField(blank=True, null=True)
-    hours_pay = models.ForeignKey(HoursPay, on_delete=models.SET_NULL, null=True, blank=True)
-    payment_mode = models.ForeignKey(PaymentMode, on_delete=models.SET_NULL, null=True, blank=True)
+    phone = models.CharField(max_length=15)
+    website = models.URLField(null=True, blank=True)
+
+    # KYC & Verification
+    pan_verified = models.BooleanField(default=False)
+    fssai_license = models.CharField(max_length=50, null=True, blank=True)
+    gst_number = models.CharField(max_length=50, null=True, blank=True)
+
+    # Preferences
+    notifications_enabled = models.BooleanField(default=True)
+    theme_preference = models.CharField(max_length=10, choices=[("light", "Light"), ("dark", "Dark")], default="light")
+
+    # Store Details
+    store_name = models.CharField(max_length=150, null=True, blank=True)
+    store_address = models.TextField(null=True, blank=True)
+    store_id = models.CharField(max_length=50, null=True, blank=True)
+    opened_on = models.DateField(null=True, blank=True)
+    store_timings = models.CharField(max_length=100, null=True, blank=True)
+    support_contact = models.CharField(max_length=15, null=True, blank=True)
+
+    # Status & Operations
+    store_status = models.CharField(max_length=20, choices=[("active", "Active"), ("inactive", "Inactive")], default="active")
+    account_number_last4 = models.CharField(max_length=4, null=True, blank=True)
+    payout_cycle = models.CharField(max_length=20, choices=[("weekly", "Weekly"), ("monthly", "Monthly")], default="weekly")
 
     def __str__(self):
         return self.name

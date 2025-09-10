@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://192.168.1.39:8000/api";
+const API_BASE = "http://192.168.1.36:8000/api";
 
 export const saveDailyEarning = async (payload) => {
   try {

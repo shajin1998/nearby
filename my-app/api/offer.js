@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://192.168.1.39:8000/api/offers/"; 
+const API_URL = "http://192.168.1.36:8000/api/offers/"; 
 
 export const getOffers = async () => {
   try {

@@ -1,23 +1,39 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import React, { useState ,useContext} from "react";
+import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { verifyOTP } from "../api/auth";   
+import { useNavigation } from "@react-navigation/native";
+import MyContext from '../App'; 
+
 
 export default function VerifyOTPScreens() {
+  const { sharedValue,setSharedValue } = useContext(MyContext) || {};
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [otp, setOtp] = useState("");
   const [responseMsg, setResponseMsg] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const navigation = useNavigation(); 
+
   const handleVerifyOTP = async () => {
     const data = await verifyOTP(email, role, otp);
-
+    console.log("profile data",data)
+    
     if (data.error) {
       setIsSuccess(false);
       setResponseMsg(data.error);
     } else {
       setIsSuccess(true);
       setResponseMsg(data.message);
+     console.log(data.profile)
+      if (data.profile) {
+        setSharedValue(data.profile)
+        console.log(sharedValue)
+        // localStorage.setItem("profile",data.profile)
+        navigation.navigate("ProfileDetailScreen");
+      } else {
+        setResponseMsg(data.error);
+      }
     }
   };
 

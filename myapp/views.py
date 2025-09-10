@@ -196,10 +196,14 @@ class DailyEarningAPIView(APIView):
 
     def post(self, request):
         serializer = DailyEarningSerializer(data=request.data)
+        print(request.data)
         if serializer.is_valid():
             serializer.save()
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
     def put(self, request, pk):
         try:
@@ -280,14 +284,14 @@ class VerifyOTPAPIView(APIView):
 
         print(" Incoming Verify:", email, role, otp_value)
 
-        # Validation
+        
         if not email or not role or not otp_value:
             return Response(
                 {'error': 'Email, role, and OTP are required.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # OTP should be int
+        
         try:
             otp_value = int(otp_value)
         except ValueError:
@@ -296,13 +300,16 @@ class VerifyOTPAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # User check
+        
         try:
-            user = UserProfile.objects.get(email=email.strip().lower(), role=role.strip().lower())
+            user = UserProfile.objects.get(
+                email=email.strip().lower(),
+                role=role.strip().lower()
+            )
         except UserProfile.DoesNotExist:
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-       
+        
         try:
             otp_obj = DeliveryOTP.objects.filter(
                 user=user, otp=otp_value, is_verified=False
@@ -314,16 +321,18 @@ class VerifyOTPAPIView(APIView):
         otp_obj.is_verified = True
         otp_obj.save()
 
-        
-        
+      
         user.is_verified = True
         user.save()
 
-        serializer = DeliveryOTPSerializer(otp_obj)
+        
+        otp_serializer = DeliveryOTPSerializer(otp_obj)
+        user_serializer = UserProfileSerializer(user)
 
         return Response({
             "message": "OTP verified successfully!",
-            "data": serializer.data
+            "otp_data": otp_serializer.data,
+            "profile": user_serializer.data
         }, status=status.HTTP_200_OK)
 
         
@@ -337,18 +346,17 @@ class SaveDailyEarningAPIView(APIView):
 
         print(" Incoming:", email, role, date, hours_worked)
 
-        # 🔹 Validation
+        
         if not email or not role or not date or not hours_worked:
             return Response(
                 {"error": "Email, role, date and hours_worked are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 🔹 Normalize
+       
         email = str(email).strip().lower()
         role = str(role).strip().lower()
 
-        # 🔹 User lookup
         try:
             user = UserProfile.objects.get(email=email, role=role)
         except UserProfile.DoesNotExist:
@@ -357,14 +365,14 @@ class SaveDailyEarningAPIView(APIView):
             print(" Error in SaveDailyEarning:", str(e))
             return Response({"error": str(e)}, status=500)
 
-        # 🔹 Hourly pay check
+        
         if not user.hours_pay or not user.hours_pay.amount:
             return Response(
                 {"error": "Hourly pay not found for this user"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 🔹 Safe conversion
+        
         try:
             hourly_amount = Decimal(user.hours_pay.amount)
             hours = Decimal(hours_worked)
@@ -374,10 +382,10 @@ class SaveDailyEarningAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 🔹 Calculate earning
+        
         total_earning = hourly_amount * hours
 
-        # 🔹 Save record
+        
         daily_earning = DailyEarning.objects.create(
             user=user,
             date_of_earning=date,
@@ -386,7 +394,7 @@ class SaveDailyEarningAPIView(APIView):
 
         serializer = DailyEarningSerializer(daily_earning)
 
-        # 🔹 Response (GenerateOTPAPIView போலவே)
+        
         return Response(
             {
                 "message": "Daily earning saved successfully",
@@ -449,3 +457,45 @@ class GetDailyEarningsAPIView(APIView):
             "total_earning": float(total_earning_sum),
             "records": records
         }, status=status.HTTP_200_OK)
+    
+
+class ProfileAPIView(APIView):
+    def get(self, request, pk=None):
+        if pk:
+            try:
+                profile = UserProfile.objects.get(pk=pk)
+                serializer = UserProfileSerializer(profile)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except UserProfile.DoesNotExist:
+                return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        profiles = UserProfile.objects.all()
+        serializer = UserProfileSerializer(profiles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = UserProfileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        try:
+            profile = UserProfile.objects.get(pk=pk)
+        except UserProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        try:
+            profile = UserProfile.objects.get(pk=pk)
+            profile.delete()
+            return Response({"success": True, "message": "Profile deleted"}, status=status.HTTP_204_NO_CONTENT)
+        except UserProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)    

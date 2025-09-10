@@ -7,16 +7,21 @@ import VerifyOTPScreen from "./screen/VerifyOTPScreens";
 import CategoryScreen from "./screen/CategoryScreens";
 import UserProfileScreen from "./screen/UserProfileScreen"; 
 import OfferScreen from "./screen/OfferScreen"; 
-import DailyEarningPage from "./src/pages/DailyEarningPage";
+import DailyEarningPage from "./screen/DailyEarningScreen";
 import SaveDailyEarningScreen from "./screen/SaveDailyEarningScreen";
 import GetDailyEarningsScreen from "./screen/GetDailyEarningsScreen";
-
-
+import ProfileDetailScreen from "./screen/ProfileDetailScreen";
+import { createContext } from 'react';
+ 
+const MyContext = createContext();
 const Stack = createStackNavigator();
 
 export default function App() {
+  const [sharedValue, setSharedValue] = useState('Hello from context!');
   return (
+    
     <NavigationContainer>
+      <MyContext.Provider value={{ sharedValue, setSharedValue }}>
       <Stack.Navigator initialRouteName="OTPScreens">
         <Stack.Screen
           name="OTPScreens"
@@ -58,9 +63,12 @@ export default function App() {
           component={GetDailyEarningsScreen} 
           options={{ title: "Daily Earnings" }}
         />
+        <Stack.Screen name="ProfileDetailScreen" component={ProfileDetailScreen} />
       </Stack.Navigator>
       
-
+    </MyContext.Provider>
     </NavigationContainer>
+
+    
   );
 }
