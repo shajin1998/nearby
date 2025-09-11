@@ -8,15 +8,26 @@ import {
   Image,
   StatusBar,
   SafeAreaView,
+  Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
-const PartnerLoginScreen = ({ navigation }) => {
+const PartnerLoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const router = useRouter(); // ✅ Expo Router hook
 
   const handleLogin = () => {
+    // Validation check
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+
     console.log('Login clicked:', email, password);
-    // navigation.navigate('HomeScreen');
+
+    // Navigate to DashboardScreen
+    router.push('/Dashboardscreen');
   };
 
   return (
@@ -96,7 +107,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderBottomWidth: 1,
-    borderBottomColor: '#C7E62B', 
+    borderBottomColor: '#C7E62B',
     paddingVertical: 8,
     marginBottom: 20,
     fontSize: 16,
@@ -107,13 +118,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   loginButton: {
-    backgroundColor: '#C7E62B', 
+    backgroundColor: '#C7E62B',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
   },
   loginButtonText: {
-    color: '#000', 
+    color: '#000',
     fontSize: 16,
     fontWeight: '700',
   },

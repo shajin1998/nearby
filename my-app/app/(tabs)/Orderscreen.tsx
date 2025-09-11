@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const orders = [
   {
@@ -64,7 +66,7 @@ const orders = [
   },
 ];
 
-const getStatusStyle = (status) => {
+const getStatusStyle = (status: string) => {
   switch (status) {
     case 'New':
       return { backgroundColor: '#4CAF50', color: 'white' };
@@ -77,7 +79,7 @@ const getStatusStyle = (status) => {
   }
 };
 
-const OrderCard = ({ order, isExpanded, onPress }) => (
+const OrderCard = ({ order, isExpanded, onPress }: any) => (
   <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -103,18 +105,8 @@ const OrderCard = ({ order, isExpanded, onPress }) => (
 
       {isExpanded && (
         <View style={styles.detailBox}>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonText}>📞 Call</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.buttonOutline}>
-              <Text style={styles.buttonOutlineText}>💬 Message</Text>
-            </TouchableOpacity>
-          </View>
-
           <Text style={styles.itemsTitle}>Items</Text>
-
-          {order.items.map((item) => (
+          {order.items.map((item: any) => (
             <View key={item.id} style={styles.itemRow}>
               <Image source={item.image} style={styles.itemImage} />
               <View style={{ flex: 1 }}>
@@ -130,19 +122,32 @@ const OrderCard = ({ order, isExpanded, onPress }) => (
 );
 
 export default function OrdersScreen() {
-  const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const router = useRouter();
 
-  const handlePress = (orderId) => {
-    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
+  const handlePress = (order: any) => {
+    if (order.name === 'Karthick') {
+      router.push('/settingspage');
+    } else {
+      setExpandedOrderId(expandedOrderId === order.id ? null : order.id);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#C7E62B" barStyle="dark-content" />
+
+      {/* Header with Back Arrow */}
       <View style={styles.header}>
-        <Text style={styles.logo}>zepto</Text>
+        <TouchableOpacity onPress={() => router.push('/storeproduct')}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.logo}>Nearby</Text>
+        <View style={{ width: 24 }} /> 
       </View>
+
       <Text style={styles.title}>ORDERS</Text>
+
       <FlatList
         data={orders}
         keyExtractor={(item) => item.id}
@@ -150,7 +155,7 @@ export default function OrdersScreen() {
           <OrderCard
             order={item}
             isExpanded={expandedOrderId === item.id}
-            onPress={() => handlePress(item.id)}
+            onPress={() => handlePress(item)}
           />
         )}
         contentContainerStyle={styles.list}
@@ -163,12 +168,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
     backgroundColor: '#C7E62B',
-    padding: 16,
-    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     height: 100,
   },
-  logo: { color: '#000', fontSize: 24, fontWeight: 'bold' },
+  logo: { color: '#000', fontSize: 22, fontWeight: 'bold' },
   title: { fontSize: 18, fontWeight: 'bold', marginLeft: 20, marginTop: 10 },
   list: { padding: 10 },
   card: {
@@ -189,32 +196,8 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   timeText: { color: '#777', fontSize: 12 },
   detailBox: { marginTop: 10, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 8 },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  button: {
-    flex: 1,
-    backgroundColor: '#C7E62B',
-    borderRadius: 5,
-    paddingVertical: 6,
-    marginRight: 6,
-    alignItems: 'center',
-  },
-  buttonText: { color: '#000', fontWeight: '600' },
-  buttonOutline: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#C7E62B',
-    borderRadius: 5,
-    paddingVertical: 6,
-    marginLeft: 6,
-    alignItems: 'center',
-  },
-  buttonOutlineText: { color: '#C7E62B', fontWeight: '600' },
   itemsTitle: { fontWeight: 'bold', fontSize: 14, marginVertical: 6 },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
+  itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   itemImage: { width: 40, height: 40, borderRadius: 4, marginRight: 10 },
   itemName: { fontSize: 14, color: '#333' },
   itemQty: { fontSize: 14, color: '#333', fontWeight: '500' },

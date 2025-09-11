@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const initialProducts = [
   { id: '1', name: 'Banana', price: 25, stock: true, image: require('@/assets/images/banana.jpg') },
@@ -22,11 +23,12 @@ const initialProducts = [
   { id: '8', name: 'Fresh Creams', price: 70, stock: true, image: require('@/assets/images/fresh cream.jpeg') },
 ];
 
-const StoreProductsScreen = () => {
+export default function StoreProductsScreen() {
   const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState('');
+  const router = useRouter();
 
-  const toggleStock = (id) => {
+  const toggleStock = (id: string) => {
     const updated = products.map((item) =>
       item.id === id ? { ...item, stock: !item.stock } : item
     );
@@ -50,8 +52,8 @@ const StoreProductsScreen = () => {
       <Switch
         value={item.stock}
         onValueChange={() => toggleStock(item.id)}
-        thumbColor={item.stock ? '#fff' : '#fff'}
-        trackColor={{ false: '#ccc', true: '#C7E62B' }} // Changed to #C7E62B
+        thumbColor={'#fff'}
+        trackColor={{ false: '#ccc', true: '#C7E62B' }}
       />
     </View>
   );
@@ -60,7 +62,13 @@ const StoreProductsScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        {/* Back Arrow */}
+        <TouchableOpacity onPress={() => router.push('/Dashboardscreen')}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+
         <Text style={styles.headerTitle}>STORE PRODUCTS</Text>
+
         <TouchableOpacity style={styles.plusButton}>
           <Ionicons name="add" size={22} color="#C7E62B" />
         </TouchableOpacity>
@@ -84,7 +92,7 @@ const StoreProductsScreen = () => {
           data={filteredProducts}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
         />
       ) : (
         <View style={styles.noResults}>
@@ -92,17 +100,22 @@ const StoreProductsScreen = () => {
           <Text style={{ color: '#999', fontSize: 16, marginTop: 8 }}>No products found</Text>
         </View>
       )}
+
+      {/* Continue Button */}
+      <TouchableOpacity
+        style={styles.continueButton}
+        onPress={() => router.push('/Orderscreen')}
+      >
+        <Text style={styles.continueText}>Continue</Text>
+      </TouchableOpacity>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
   header: {
-    backgroundColor: '#C7E62B', // Changed to #C7E62B
+    backgroundColor: '#C7E62B',
     paddingHorizontal: 16,
     paddingVertical: 20,
     borderRadius: 16,
@@ -112,16 +125,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
     height: 100,
   },
-  headerTitle: {
-    color: '#000', // Changed to black for better contrast with #C7E62B
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  plusButton: {
-    backgroundColor: '#fff',
-    padding: 6,
-    borderRadius: 16,
-  },
+  headerTitle: { color: '#000', fontWeight: 'bold', fontSize: 18 },
+  plusButton: { backgroundColor: '#fff', padding: 6, borderRadius: 16 },
   searchBox: {
     flexDirection: 'row',
     backgroundColor: '#eee',
@@ -136,13 +141,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  searchIcon: {
-    marginRight: 6,
-  },
-  input: {
-    flex: 1,
-    color: '#000',
-  },
+  searchIcon: { marginRight: 6 },
+  input: { flex: 1, color: '#000' },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -153,33 +153,22 @@ const styles = StyleSheet.create({
     marginTop: 10,
     elevation: 2,
   },
-  image: {
-    width: 65,
-    height: 55,
-    marginRight: 16,
-    borderRadius: 8,
-  },
-  name: {
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  price: {
-    color: '#555',
-    marginVertical: 2,
-  },
-  inStock: {
-    color: 'green',
-    fontSize: 13,
-  },
-  outStock: {
-    color: 'red',
-    fontSize: 13,
-  },
-  noResults: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 50,
-  },
-});
+  image: { width: 65, height: 55, marginRight: 16, borderRadius: 8 },
+  name: { fontWeight: 'bold', fontSize: 15 },
+  price: { color: '#555', marginVertical: 2 },
+  inStock: { color: 'green', fontSize: 13 },
+  outStock: { color: 'red', fontSize: 13 },
+  noResults: { alignItems: 'center', justifyContent: 'center', marginTop: 50 },
 
-export default StoreProductsScreen;
+  continueButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: '#C7E62B',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  continueText: { fontSize: 16, fontWeight: 'bold', color: '#000' },
+});

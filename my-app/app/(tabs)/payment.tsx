@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const transactions = [
   { id: '1', type: 'Completed order', amount: '$50.00', date: 'Jan 18' },
@@ -9,14 +11,30 @@ const transactions = [
 ];
 
 const PaymentsScreen = () => {
+  const router = useRouter(); // ✅ Expo Router
+
+  const handleBack = () => {
+    router.push('/paymentmethod'); // Back arrow → PaymentMethodsScreen
+  };
+
+  const handleWithdraw = () => {
+    router.push('/paymentdetails'); // Withdraw button → PaymentDetailsScreen
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.heading}>Payments</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.heading}>Payments</Text>
+      </View>
 
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Total balance</Text>
         <Text style={styles.balanceAmount}>$1,250.00</Text>
-        <TouchableOpacity style={styles.withdrawButton}>
+        <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
           <Text style={styles.withdrawButtonText}>WITHDRAW</Text>
         </TouchableOpacity>
       </View>
@@ -42,19 +60,9 @@ const PaymentsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  heading: {
-    color: '#000',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    marginTop: 30,
-  },
+  container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 16, paddingTop: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 40 },
+  heading: { color: '#000', fontSize: 24, fontWeight: 'bold', marginLeft: 12 },
   balanceCard: {
     backgroundColor: '#C7E62B',
     borderRadius: 12,
@@ -62,34 +70,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  balanceLabel: {
-    color: '#222',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  balanceAmount: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  withdrawButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-  },
-  withdrawButtonText: {
-    color: '#222',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  transactionsHeading: {
-    color: '#222',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
+  balanceLabel: { color: '#222', fontSize: 14, marginBottom: 8 },
+  balanceAmount: { color: '#fff', fontSize: 28, fontWeight: 'bold', marginBottom: 16 },
+  withdrawButton: { backgroundColor: '#fff', paddingVertical: 10, paddingHorizontal: 30, borderRadius: 8 },
+  withdrawButtonText: { color: '#222', fontSize: 14, fontWeight: 'bold' },
+  transactionsHeading: { color: '#222', fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
   transactionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -100,20 +85,9 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 12,
   },
-  transactionType: {
-    color: '#222',
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  transactionDate: {
-    color: '#888',
-    fontSize: 13,
-  },
-  transactionAmount: {
-    color: '#C7E62B',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  transactionType: { color: '#222', fontSize: 16, marginBottom: 4 },
+  transactionDate: { color: '#888', fontSize: 13 },
+  transactionAmount: { color: '#C7E62B', fontSize: 16, fontWeight: 'bold' },
 });
 
 export default PaymentsScreen;

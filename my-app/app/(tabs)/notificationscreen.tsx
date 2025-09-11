@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const notifications = [
   { id: '1', type: 'New order', desc: 'You have received a new order.', time: '2m' },
@@ -11,6 +12,12 @@ const notifications = [
 ];
 
 const NotificationScreen = () => {
+  const router = useRouter(); // ✅ Expo Router
+
+  const handleBack = () => {
+    router.push('/settingspage'); // Back arrow navigation
+  };
+
   const renderItem = ({ item }) => (
     <View style={styles.notificationItem}>
       <View style={styles.iconContainer}>
@@ -28,9 +35,14 @@ const NotificationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
         <Text style={styles.headerText}>Notifications</Text>
       </View>
+
       <Text style={styles.sectionTitle}>Today</Text>
       <FlatList
         data={notifications}
@@ -48,69 +60,38 @@ const NotificationScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
   header: {
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
     height: 120,
-    backgroundColor: '#C7E62B', 
+    paddingHorizontal: 20,
+    backgroundColor: '#C7E62B',
   },
   headerText: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#000', 
-    marginTop: 40,
+    color: '#000',
     marginLeft: 20,
+    marginTop: 40,
   },
-  listContainer: {
-    paddingHorizontal: 20,
-    marginTop: 10,
-  },
-  notificationItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
+  listContainer: { paddingHorizontal: 20, marginTop: 10 },
+  notificationItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   iconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#C7E62B', 
+    backgroundColor: '#C7E62B',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  textContainer: {
-    flex: 1,
-  },
-  title: {
-    color: '#000',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  description: {
-    color: '#777',
-    fontSize: 13,
-  },
-  time: {
-    color: '#666',
-    fontSize: 12,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#ccc',
-    marginTop: 30,
-  },
-  sectionTitle: {
-    color: '#000',
-    fontSize: 14,
-    marginBottom: 10,
-    marginLeft: 30,
-    marginTop: 30,
-  },
+  textContainer: { flex: 1 },
+  title: { color: '#000', fontWeight: '600', fontSize: 15 },
+  description: { color: '#777', fontSize: 13 },
+  time: { color: '#666', fontSize: 12 },
+  separator: { height: 1, backgroundColor: '#ccc', marginTop: 30 },
+  sectionTitle: { color: '#000', fontSize: 14, marginBottom: 10, marginLeft: 30, marginTop: 30 },
 });
 
 export default NotificationScreen;
